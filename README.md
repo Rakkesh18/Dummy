@@ -143,3 +143,23 @@ Provide contact details for key personnel responsible for disaster recovery, inc
 ---
 
 This structure should provide a clear and comprehensive guide for your disaster recovery processes, ensuring that all necessary steps and considerations are documented.
+Here's how you can incorporate the additional content into the **Disaster Recovery Overview** section:
+
+---
+
+### **2. Disaster Recovery Overview**
+
+#### **2.1 What is Disaster Recovery?**
+Disaster Recovery (DR) refers to the strategies and procedures implemented to restore critical IT systems and infrastructure after a catastrophic event, such as natural disasters, cyberattacks, or human errors. The goal is to ensure business continuity by quickly recovering essential operations and minimizing downtime.
+
+#### **2.2 Importance of Disaster Recovery**
+Having a robust disaster recovery plan is crucial for maintaining business continuity and protecting sensitive data. It ensures that in the event of a disaster, the organization can swiftly recover its IT environment, thereby avoiding significant financial losses and reputational damage.
+
+#### **2.3 STIB Application Disaster Recovery Strategy**
+As the STIB application is hosted on the cloud, we can leverage cloud-native features such as availability zones and regions to ensure minimal downtime during disruptions in a particular zone or region. By utilizing a secondary region, we can maintain business continuity even if the primary region experiences a failure. 
+
+In the event of a disruption in the primary region, the secondary region's services and applications will automatically take over, minimizing downtime and ensuring that operations continue with minimal interruption. This approach ensures that critical services and applications remain available, thereby protecting the organization from prolonged outages and enabling a swift recovery.
+
+---
+
+This addition explains how the STIB application utilizes cloud capabilities for disaster recovery, emphasizing the use of availability zones and secondary regions to maintain business continuity.
