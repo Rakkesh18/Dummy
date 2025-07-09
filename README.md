@@ -33,3 +33,23 @@ The pipelines can be triggered by various conditions, such as:
 ---
 
 This update clearly defines the roles of the two pipelines in the disaster recovery process, emphasizing their specific objectives and the steps they follow to ensure a smooth recovery.
+
+
+
+
+input_file = 'IRCM_ALL_BU_RC_202503_DATA_20250702.csv'
+output_file = 'IRCM_ALL_BU_RC_202503_DATA_20250702_modified.csv'
+
+with open(input_file, 'r', encoding='utf-8') as infile, \
+     open(output_file, 'w', encoding='utf-8') as outfile:
+    
+    for i, line in enumerate(infile):
+        line = line.rstrip('\n')  # Remove trailing newline
+        if i == 0:
+            # Header row — add new column name
+            outfile.write(f'{line};"custom_field"\n')
+        else:
+            # Data rows — add ;"" as new empty field
+            outfile.write(f'{line};""\n')
+
+
