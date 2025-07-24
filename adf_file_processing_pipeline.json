@@ -1,0 +1,151 @@
+{
+    "name": "FileProcessingWithSQLAgentJob",
+    "properties": {
+        "activities": [
+            {
+                "name": "GetInputFiles",
+                "type": "GetMetadata",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30
+                },
+                "typeProperties": {
+                    "dataset": {
+                        "referenceName": "InputBlobDataset",
+                        "type": "DatasetReference"
+                    },
+                    "fieldList": [
+                        "childItems"
+                    ]
+                }
+            },
+            {
+                "name": "ForEachFile",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "GetInputFiles",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "items": "@activity('GetInputFiles').output.childItems",
+                    "activities": [
+                        {
+                            "name": "LookupFileInMaster",
+                            "type": "Lookup",
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlSource",
+                                    "sqlReaderQuery": "SELECT COUNT(*) AS FileExists FROM MasterFileList WHERE FileName = '@{item().name}'"
+                                },
+                                "dataset": {
+                                    "referenceName": "MasterTableDataset",
+                                    "type": "DatasetReference"
+                                },
+                                "firstRowOnly": true
+                            }
+                        },
+                        {
+                            "name": "CheckIfFileExists",
+                            "type": "IfCondition",
+                            "typeProperties": {
+                                "expression": {
+                                    "value": "@equals(activity('LookupFileInMaster').output.firstRow.FileExists, 1)",
+                                    "type": "Expression"
+                                },
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "TriggerSQLJob",
+                                        "type": "SqlServerStoredProcedure",
+                                        "typeProperties": {
+                                            "storedProcedureName": "sp_start_job",
+                                            "storedProcedureParameters": {
+                                                "job_name": {
+                                                    "value": "YourJobName",
+                                                    "type": "String"
+                                                }
+                                            }
+                                        },
+                                        "linkedServiceName": {
+                                            "referenceName": "SqlLinkedService",
+                                            "type": "LinkedServiceReference"
+                                        }
+                                    },
+                                    {
+                                        "name": "WaitUntilJobCompletes",
+                                        "type": "Until",
+                                        "typeProperties": {
+                                            "expression": {
+                                                "value": "@equals(activity('CheckJobStatus').output.firstRow.IsRunning, 0)",
+                                                "type": "Expression"
+                                            },
+                                            "activities": [
+                                                {
+                                                    "name": "CheckJobStatus",
+                                                    "type": "Lookup",
+                                                    "typeProperties": {
+                                                        "source": {
+                                                            "type": "SqlSource",
+                                                            "sqlReaderQuery": "\n                                                            SELECT CASE\n                                                                WHEN EXISTS (\n                                                                    SELECT 1 FROM msdb.dbo.sysjobs j\n                                                                    JOIN msdb.dbo.sysjobactivity a ON j.job_id = a.job_id\n                                                                    WHERE j.name = 'YourJobName' AND stop_execution_date IS NULL\n                                                                ) THEN 1 ELSE 0 END AS IsRunning\n                                                            "
+                                                        },
+                                                        "dataset": {
+                                                            "referenceName": "SqlStatusDataset",
+                                                            "type": "DatasetReference"
+                                                        },
+                                                        "firstRowOnly": true
+                                                    }
+                                                },
+                                                {
+                                                    "name": "Wait30Sec",
+                                                    "type": "Wait",
+                                                    "typeProperties": {
+                                                        "waitTimeInSeconds": 30
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "ifFalseActivities": [
+                                    {
+                                        "name": "MoveFileToArchive",
+                                        "type": "Copy",
+                                        "typeProperties": {
+                                            "source": {
+                                                "type": "BlobSource"
+                                            },
+                                            "sink": {
+                                                "type": "BlobSink"
+                                            },
+                                            "enableStaging": false
+                                        },
+                                        "inputs": [
+                                            {
+                                                "referenceName": "InputBlobDataset",
+                                                "type": "DatasetReference"
+                                            }
+                                        ],
+                                        "outputs": [
+                                            {
+                                                "referenceName": "ArchiveBlobDataset",
+                                                "type": "DatasetReference"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "annotations": [],
+        "concurrency": 1,
+        "runConcurrently": false
+    }
+}
